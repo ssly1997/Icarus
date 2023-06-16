@@ -33,9 +33,9 @@ do {
 
 @icarusCodable
 struct People{
-  @icarusAnnotation(default: "aaa")
+  @icarusAnnotation(default: "aaaad")
   let name: String
-//  @icarusAnnotation(key: "new_age", default: 99)
+  @icarusAnnotation(key: "age", default: 99)
   let age: Int
 }
 

@@ -93,9 +93,11 @@ public struct AutoCodableMacro: MemberMacro, ConformanceMacro {
     })
     
     // MARK: - Decoder
-    let decoderBody: DeclSyntax = "\(raw: "let container = try decoder.container(keyedBy: CodingKeys.self)\n\(arguments.map { "\($0.name) = (try? container.decode(\($0.type).self, forKey: .\($0.key))) ?? \($0.defaultValue ?? $0.type.defaultValueExpression)" }.joined(separator: "\n"))")"
     let decoder = try InitializerDeclSyntax(PartialSyntaxNodeString(stringLiteral: "public init(from decoder: Decoder) throws"), bodyBuilder: {
-      decoderBody
+      DeclSyntax(stringLiteral: "let container = try decoder.container(keyedBy: CodingKeys.self)")
+			for argument in arguments {
+				ExprSyntax(stringLiteral: "\(argument.name) = (try? container.decode(\(argument.type).self, forKey: .\(argument.key))) ?? \(argument.defaultValue ?? argument.type.defaultValueExpression)")
+			}
     })
 
     // MARK: - Encoder
