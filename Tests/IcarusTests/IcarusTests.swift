@@ -5,7 +5,8 @@ import IcarusMacros
 
 let testMacros: [String: Macro.Type] = [
   "icarusCodable": AutoCodableMacro.self,
-  "icarusAnnotation": AutoCodableAnnotation.self
+  "icarusAnnotation": AutoCodableAnnotation.self,
+	"icarusMirror": MirrorMacro.self
 ]
 
 final class IcarusTests: XCTestCase {
@@ -41,4 +42,17 @@ final class IcarusTests: XCTestCase {
       , expandedSource: "",
       macros: testMacros)
   }
+	
+	func testMirror() {
+		assertMacroExpansion(
+			#"""
+			@icarusMirror
+			struct Test{
+				let a: String
+				let b: Int
+			}
+			"""#
+			, expandedSource: "",
+			macros: testMacros)
+	}
 }

@@ -26,24 +26,37 @@ let dic: [String: Any] = [:]
 do {
   let jsonData = try JSONSerialization.data(withJSONObject: dic, options: [])
   let value = try JSONDecoder().decode(Generic<Test>.self, from: jsonData)
-  print(value)
+//  print(value)
 } catch {
   print("Error: \(error)")
 }
 
-@icarusCodable
-struct People{
-  @icarusAnnotation(default: "aaaad")
-  let name: String
-  @icarusAnnotation(key: "age", default: 99)
-  let age: Int
+enum Sex: Codable {
+	case male
+	case female
 }
 
-let peopleDic: [String: Any] = ["name": 99, "age": 25]
+extension Sex: IcarusCodable {
+	static var defaultValue: Sex { .female }
+}
+
+let a = 99
+
+@icarusCodable
+struct People{
+//  @icarusAnnotation(default: "aaaad")
+  let name: String
+  @icarusAnnotation(key: "new_age", default: a + 1)
+  let age: Int
+//	@icarusAnnotation(default: Sex.female)
+	let sex: Sex
+}
+
+let peopleDic: [String: Any] = ["name": "ldc", "age": false]
 
 do {
   let value: People = try decode(peopleDic)
-  print(value)
+//  print(value)
 } catch {
   print("Error: \(error)")
 }
@@ -72,3 +85,13 @@ func decode<T: Codable>(_ dic: [String: Any]) throws -> T {
   let jsonData = try JSONSerialization.data(withJSONObject: dic, options: [])
   return try JSONDecoder().decode(T.self, from: jsonData)
 }
+
+@icarusMirror
+struct MirrorTest {
+	let name: String
+	let age: Int
+	let people: People
+	let optional: Int??
+}
+
+print(MirrorTest.mirror)
