@@ -73,7 +73,6 @@ public struct AutoCodableMacro: MemberMacro, ConformanceMacro {
     
     // MARK: - _init
     let _initBody: ExprSyntax = "\(raw: arguments.map { "self.\($0.name) = _\($0.name)" }.joined(separator: "\n"))"
-    
     let _initDeclSyntax = try InitializerDeclSyntax(
       PartialSyntaxNodeString(stringLiteral: "private init(\(arguments.map { "_\($0.name): \($0.type)" }.joined(separator: ", ")))"),
       bodyBuilder: {
@@ -83,7 +82,7 @@ public struct AutoCodableMacro: MemberMacro, ConformanceMacro {
     
     // MARK: - defaultValue
     let defaultBody: ExprSyntax = "Self(\(raw: arguments.map { "_\($0.name): \($0.defaultValue ?? $0.type.defaultValueExpression)" }.joined(separator: ",")))"
-    let defaultDeclSyntax: VariableDeclSyntax = try VariableDeclSyntax("static var defaultValue: Self") {
+    let defaultDeclSyntax: VariableDeclSyntax = try VariableDeclSyntax("public static var defaultValue: Self") {
       defaultBody
     }
     

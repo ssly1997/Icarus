@@ -16,12 +16,11 @@ final class IcarusTests: XCTestCase {
       struct People { }
       
       @icarusCodable
-      struct Test{
+      struct Student{
         let name: String
-        @icarusAnnotation(key: "key_age", default: 12)
         let age: Int
-        @icarusAnnotation(default: "asd")
-        let address: String
+        let address: String?
+        let isBoarder: Bool
       }
       """#
       ,
@@ -32,12 +31,13 @@ final class IcarusTests: XCTestCase {
   func testAnnotation() {
     assertMacroExpansion(
       #"""
+      @icarusMirror
       struct Test{
-        @icarusAnnotation(default: "hhh")
         let a: String
-        @icarusAnnotation(key: "key_b", default: 123)
         let b: Int
       }
+      //@icarusMirror
+      extension Test {}
       """#
       , expandedSource: "",
       macros: testMacros)
@@ -45,8 +45,7 @@ final class IcarusTests: XCTestCase {
 	
 	func testMirror() {
 		assertMacroExpansion(
-			#"""
-			@icarusMirror
+      #"""
 			struct Test{
 				let a: String
 				let b: Int

@@ -51,8 +51,7 @@ public struct MirrorMacro: MemberMacro, ConformanceMacro {
 			return (name: name, type: type)
 		}
 		
-		let header = PartialSyntaxNodeString(stringLiteral: "static var mirror: Dictionary<String, Any.Type>")
-		let mirrorSyntax = try VariableDeclSyntax(header) {
+		let mirrorSyntax = try VariableDeclSyntax("static var mirror: Dictionary<String, Any.Type>") {
 			ExprSyntax(stringLiteral: "[\n")
 			for argument in arguments {
 				ExprSyntax(stringLiteral: "\"\(argument.name)\": \(argument.type).self,\n")
