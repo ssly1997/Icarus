@@ -26,7 +26,7 @@ let dic: [String: Any] = [:]
 do {
   let jsonData = try JSONSerialization.data(withJSONObject: dic, options: [])
   let value = try JSONDecoder().decode(Generic<Test>.self, from: jsonData)
-//  print(value)
+  print(value)
 } catch {
   print("Error: \(error)")
 }
@@ -91,7 +91,7 @@ struct MirrorTest {
 	let name: String
 	let age: Int
 	let people: People
-	let optional: Int??
+	let optional: Int?
 }
 
 print(MirrorTest.mirror)
@@ -119,5 +119,6 @@ struct Student {
   let address: Address
   @icarusAnnotation(default: true)
   let isBoarder: Bool
+  @icarusAnnotation(key: "_sex", default: Sex.female)
   let sex: Sex
 }

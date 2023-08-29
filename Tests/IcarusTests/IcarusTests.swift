@@ -32,7 +32,7 @@ final class IcarusTests: XCTestCase {
     assertMacroExpansion(
       #"""
       @icarusMirror
-      struct Test{
+      struct Test {
         let a: String
         let b: Int
       }
@@ -46,7 +46,7 @@ final class IcarusTests: XCTestCase {
 	func testMirror() {
 		assertMacroExpansion(
       #"""
-			struct Test{
+			struct Test {
 				let a: String
 				let b: Int
 			}

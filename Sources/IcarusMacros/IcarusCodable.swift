@@ -22,13 +22,23 @@ public struct AutoCodableAnnotation: PeerMacro {
     }
 }
 
-public struct AutoCodableMacro: MemberMacro, ConformanceMacro {
+public struct AutoCodableMacro: MemberMacro, ExtensionMacro {
   public static func expansion(
-    of node: AttributeSyntax,
-    providingConformancesOf declaration: some DeclGroupSyntax,
-    in context: some MacroExpansionContext) throws -> [(TypeSyntax, GenericWhereClauseSyntax?)] {
-      let type = TypeSyntax(stringLiteral: "IcarusCodable")
-      return [(type, nil)]
+    of node: SwiftSyntax.AttributeSyntax,
+    attachedTo declaration: some SwiftSyntax.DeclGroupSyntax,
+    providingExtensionsOf type: some SwiftSyntax.TypeSyntaxProtocol,
+    conformingTo protocols: [SwiftSyntax.TypeSyntax],
+    in context: some SwiftSyntaxMacros.MacroExpansionContext) throws -> [ExtensionDeclSyntax] {
+      let sendableExtension: DeclSyntax =
+            """
+            extension \(type.trimmed): IcarusCodable {}
+            """
+      
+      guard let extensionDecl = sendableExtension.as(ExtensionDeclSyntax.self) else {
+        return []
+      }
+      
+      return [extensionDecl]
     }
   
   public static func expansion(
@@ -52,12 +62,12 @@ public struct AutoCodableMacro: MemberMacro, ConformanceMacro {
       else { return nil }
       var key: String?, defaultValue: String?
       // find the icarusAnnotation annotation tag
-      guard let attribute = property.attributes?.first(where: { $0.as(AttributeSyntax.self)!.attributeName.description == "icarusAnnotation" })?.as(AttributeSyntax.self),
-            let arguments = attribute.argument?.as(TupleExprElementListSyntax.self)
+      guard let attribute = property.attributes.first(where: { $0.as(AttributeSyntax.self)!.attributeName.description == "icarusAnnotation" })?.as(AttributeSyntax.self),
+            let arguments = attribute.arguments?.as(LabeledExprListSyntax.self)
       else { return (name: name, type: type, key: key ?? name, defaultValue: defaultValue) }
       // extracting the key and default values from the annotation and parsing them according to the syntax tree structure.
       arguments.forEach {
-        let argument = $0.as(TupleExprElementSyntax.self)
+        let argument = $0.as(LabeledExprSyntax.self)
         let expression = argument?.expression.as(StringLiteralExprSyntax.self)
         let segments = expression?.segments.first?.as(StringSegmentSyntax.self)
         let content = segments?.content
@@ -72,11 +82,12 @@ public struct AutoCodableMacro: MemberMacro, ConformanceMacro {
     }
     
     // MARK: - _init
-    let _initBody: ExprSyntax = "\(raw: arguments.map { "self.\($0.name) = _\($0.name)" }.joined(separator: "\n"))"
     let _initDeclSyntax = try InitializerDeclSyntax(
-      PartialSyntaxNodeString(stringLiteral: "private init(\(arguments.map { "_\($0.name): \($0.type)" }.joined(separator: ", ")))"),
+      SyntaxNodeString(stringLiteral: "private init(\(arguments.map { "_\($0.name): \($0.type)" }.joined(separator: ", ")))"),
       bodyBuilder: {
-        _initBody
+        for argument in arguments {
+          ExprSyntax(stringLiteral: "self.\(argument.name) = _\(argument.name)")
+        }
       }
     )
     
@@ -87,22 +98,26 @@ public struct AutoCodableMacro: MemberMacro, ConformanceMacro {
     }
     
     // MARK: - CodingKeys
-    let defineCodingKeys = try EnumDeclSyntax(PartialSyntaxNodeString(stringLiteral: "public enum CodingKeys: String, CodingKey"), membersBuilder: {
-      DeclSyntax(stringLiteral: "\(arguments.map { "case \($0.key)" }.joined(separator: "\n"))")
+    let defineCodingKeys = try EnumDeclSyntax(SyntaxNodeString(stringLiteral: "public enum CodingKeys: String, CodingKey"), membersBuilder: {
+      for argument in arguments {
+        DeclSyntax(stringLiteral: "case \(argument.key)")
+      }
     })
     
     // MARK: - Decoder
-    let decoder = try InitializerDeclSyntax(PartialSyntaxNodeString(stringLiteral: "public init(from decoder: Decoder) throws"), bodyBuilder: {
+    let decoder = try InitializerDeclSyntax(SyntaxNodeString(stringLiteral: "public init(from decoder: Decoder) throws"), bodyBuilder: {
       DeclSyntax(stringLiteral: "let container = try decoder.container(keyedBy: CodingKeys.self)")
-			for argument in arguments {
-				ExprSyntax(stringLiteral: "\(argument.name) = (try? container.decode(\(argument.type).self, forKey: .\(argument.key))) ?? \(argument.defaultValue ?? argument.type.defaultValueExpression)")
-			}
+      for argument in arguments {
+        ExprSyntax(stringLiteral: "\(argument.name) = (try? container.decode(\(argument.type).self, forKey: .\(argument.key))) ?? \(argument.defaultValue ?? argument.type.defaultValueExpression)")
+      }
     })
-
+    
     // MARK: - Encoder
-    let encoder = try FunctionDeclSyntax(PartialSyntaxNodeString(stringLiteral: "public func encode(to encoder: Encoder) throws"), bodyBuilder: {
-      let expr: String = "var container = encoder.container(keyedBy: CodingKeys.self)\n\(arguments.map { "try container.encode(\($0.name), forKey: .\($0.key))" }.joined(separator: "\n"))"
-			DeclSyntax(stringLiteral: expr)
+    let encoder = try FunctionDeclSyntax(SyntaxNodeString(stringLiteral: "public func encode(to encoder: Encoder) throws"), bodyBuilder: {
+      DeclSyntax(stringLiteral: "var container = encoder.container(keyedBy: CodingKeys.self)")
+      for argument in arguments {
+        ExprSyntax(stringLiteral: "try container.encode(\(argument.name), forKey: .\(argument.key))")
+      }
     })
     
     return [
